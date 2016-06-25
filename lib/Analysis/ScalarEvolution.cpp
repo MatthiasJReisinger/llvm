@@ -4291,6 +4291,24 @@ const SCEV *ScalarEvolution::createNodeForSelectOrPHI(Instruction *I,
     std::swap(LHS, RHS);
   // fall through
   case ICmpInst::ICMP_UGT:
+    // a+1 >u b ? a+x : b+x  ->  umax(a, b)+x
+    // a+1 >u b ? b+x : a+x  ->  umin(a, b)+x
+    if (getTypeSizeInBits(LHS->getType()) <= getTypeSizeInBits(I->getType())) {
+      const SCEV *LS = getNoopOrSignExtend(getSCEV(LHS), I->getType());
+      const SCEV *LSMinusOne = getMinusSCEV(LS, getOne(I->getType()));
+      const SCEV *RS = getNoopOrSignExtend(getSCEV(RHS), I->getType());
+      const SCEV *LA = getSCEV(TrueVal);
+      const SCEV *RA = getSCEV(FalseVal);
+      const SCEV *LDiff = getMinusSCEV(LA, LSMinusOne);
+      const SCEV *RDiff = getMinusSCEV(RA, RS);
+      if (LDiff == RDiff)
+        return getAddExpr(getUMaxExpr(LSMinusOne, RS), RDiff);
+      LDiff = getMinusSCEV(LA, RS);
+      RDiff = getMinusSCEV(RA, LSMinusOne);
+      if (LDiff == RDiff)
+        return getAddExpr(getUMinExpr(LSMinusOne, RS), LDiff);
+    }
+  // fall through
   case ICmpInst::ICMP_UGE:
     // a >u b ? a+x : b+x  ->  umax(a, b)+x
     // a >u b ? b+x : a+x  ->  umin(a, b)+x
