@@ -1211,6 +1211,7 @@ Instruction *InstCombiner::foldCastedBitwiseLogic(BinaryOperator &I) {
   // fold logic(cast(A), cast(B)) -> cast(logic(A, B))
   if ((!isa<ICmpInst>(Cast0Src) || !isa<ICmpInst>(Cast1Src)) &&
       shouldOptimizeCast(Cast0) && shouldOptimizeCast(Cast1)) {
+//  if (shouldOptimizeCast(Cast0) && shouldOptimizeCast(Cast1)) {
     Value *NewOp = Builder->CreateBinOp(LogicOpc, Cast0Src, Cast1Src,
                                         I.getName());
     return CastInst::Create(CastOpcode, NewOp, DestTy);
