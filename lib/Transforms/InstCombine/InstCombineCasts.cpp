@@ -897,16 +897,15 @@ Instruction *InstCombiner::visitZExt(ZExtInst &CI) {
     if (LHS && RHS && LHS->hasOneUse() && RHS->hasOneUse() &&
         (transformZExtICmp(LHS, CI, false) ||
          transformZExtICmp(RHS, CI, false))) {
-      Value *LCast = Builder->CreateZExt(LHS, CI.getType(), LHS->getName());
-      Value *RCast = Builder->CreateZExt(RHS, CI.getType(), RHS->getName());
-      return BinaryOperator::Create(Instruction::Or, LCast, RCast);
+//      Value *LCast = Builder->CreateZExt(LHS, CI.getType(), LHS->getName());
+//      Value *RCast = Builder->CreateZExt(RHS, CI.getType(), RHS->getName());
 //      return BinaryOperator::Create(Instruction::Or, LCast, RCast);
-//      auto *LCast = dyn_cast<ZExtInst>(Builder->CreateZExt(LHS, CI.getType(), LHS->getName()));
-//      auto *RCast = dyn_cast<ZExtInst>(Builder->CreateZExt(RHS, CI.getType(), RHS->getName()));
-//      auto *NewI = BinaryOperator::Create(Instruction::Or, LCast, RCast);
-//      transformZExtICmp(LHS, *LCast);
-//      transformZExtICmp(RHS, *LCast);
-//      return NewI;
+      auto *LCast = dyn_cast<ZExtInst>(Builder->CreateZExt(LHS, CI.getType(), LHS->getName()));
+      auto *RCast = dyn_cast<ZExtInst>(Builder->CreateZExt(RHS, CI.getType(), RHS->getName()));
+      auto *NewI = BinaryOperator::Create(Instruction::Or, LCast, RCast);
+      transformZExtICmp(LHS, *LCast);
+      transformZExtICmp(RHS, *LCast);
+      return NewI;
     }
   }
 
