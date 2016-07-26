@@ -623,7 +623,9 @@ Instruction *InstCombiner::transformZExtICmp(ICmpInst *ICI, ZExtInst &CI,
 
         if (CI.getType() == In->getType())
           return replaceInstUsesWith(CI, In);
-        return CastInst::CreateIntegerCast(In, CI.getType(), false/*ZExt*/);
+
+        In = Builder->CreateIntCast(In, CI.getType(), false);
+        return replaceInstUsesWith(CI, In);
       }
     }
   }
