@@ -892,21 +892,25 @@ Instruction *InstCombiner::visitZExt(ZExtInst &CI) {
 
   BinaryOperator *SrcI = dyn_cast<BinaryOperator>(Src);
   if (SrcI && SrcI->getOpcode() == Instruction::Or) {
-    // zext (or icmp, icmp) --> or (zext icmp), (zext icmp) if at least one
-    // of the (zext icmp) will be transformed.
+    // zext (or icmp, icmp) -> or (zext icmp), (zext icmp) if at least one
+    // of the (zext icmp) can be eliminated. If so, immediately perform the
+    // according elimination.
     ICmpInst *LHS = dyn_cast<ICmpInst>(SrcI->getOperand(0));
     ICmpInst *RHS = dyn_cast<ICmpInst>(SrcI->getOperand(1));
     if (LHS && RHS && LHS->hasOneUse() && RHS->hasOneUse() &&
         (transformZExtICmp(LHS, CI, false) ||
          transformZExtICmp(RHS, CI, false))) {
-//      Value *LCast = Builder->CreateZExt(LHS, CI.getType(), LHS->getName());
-//      Value *RCast = Builder->CreateZExt(RHS, CI.getType(), RHS->getName());
-//      return BinaryOperator::Create(Instruction::Or, LCast, RCast);
-      auto *LCast = dyn_cast<ZExtInst>(Builder->CreateZExt(LHS, CI.getType(), LHS->getName()));
-      auto *RCast = dyn_cast<ZExtInst>(Builder->CreateZExt(RHS, CI.getType(), RHS->getName()));
+      // zext (or icmp, icmp) -> or (zext icmp), (zext icmp)
+      auto *LCast = cast<ZExtInst>(
+          Builder->CreateZExt(LHS, CI.getType(), LHS->getName()));
+      auto *RCast = cast<ZExtInst>(
+          Builder->CreateZExt(RHS, CI.getType(), RHS->getName()));
       auto *NewI = BinaryOperator::Create(Instruction::Or, LCast, RCast);
+
+      // Perform the elimination.
       transformZExtICmp(LHS, *LCast);
       transformZExtICmp(RHS, *LCast);
+
       return NewI;
     }
   }
