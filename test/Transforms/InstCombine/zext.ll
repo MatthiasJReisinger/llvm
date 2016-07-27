@@ -70,7 +70,7 @@ define <2 x i64> @fold_xor_zext_sandwich_vec(<2 x i1> %a) {
   ret <2 x i64> %zext2
 }
 
-; Assert that zexts in and(zext(icmp), zext(icmp)) can be folded
+; Assert that zexts in and(zext(icmp), zext(icmp)) can be folded.
 ; CHECK-LABEL: @fold_and_zext_icmp(
 ; CHECK-NEXT:    [[ICMP1:%.*]] = icmp sgt i64 %a, %b
 ; CHECK-NEXT:    [[ICMP2:%.*]] = icmp slt i64 %a, %c
@@ -86,7 +86,7 @@ define i8 @fold_and_zext_icmp(i64 %a, i64 %b, i64 %c) {
   ret i8 %5
 }
 
-; Assert that zexts in or(zext(icmp), zext(icmp)) can be folded
+; Assert that zexts in or(zext(icmp), zext(icmp)) can be folded.
 ; CHECK-LABEL: @fold_or_zext_icmp(
 ; CHECK-NEXT:    [[ICMP1:%.*]] = icmp sgt i64 %a, %b
 ; CHECK-NEXT:    [[ICMP2:%.*]] = icmp slt i64 %a, %c
@@ -102,7 +102,7 @@ define i8 @fold_or_zext_icmp(i64 %a, i64 %b, i64 %c) {
   ret i8 %5
 }
 
-; Assert that zexts in xor(zext(icmp), zext(icmp)) can be folded
+; Assert that zexts in xor(zext(icmp), zext(icmp)) can be folded.
 ; CHECK-LABEL: @fold_xor_zext_icmp(
 ; CHECK-NEXT:    [[ICMP1:%.*]] = icmp sgt i64 %a, %b
 ; CHECK-NEXT:    [[ICMP2:%.*]] = icmp slt i64 %a, %c

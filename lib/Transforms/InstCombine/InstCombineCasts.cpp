@@ -905,13 +905,14 @@ Instruction *InstCombiner::visitZExt(ZExtInst &CI) {
           Builder->CreateZExt(LHS, CI.getType(), LHS->getName()));
       auto *RCast = cast<ZExtInst>(
           Builder->CreateZExt(RHS, CI.getType(), RHS->getName()));
-      auto *NewI = BinaryOperator::Create(Instruction::Or, LCast, RCast);
+      BinaryOperator *Or =
+          BinaryOperator::Create(Instruction::Or, LCast, RCast);
 
       // Perform the elimination.
       transformZExtICmp(LHS, *LCast);
       transformZExtICmp(RHS, *LCast);
 
-      return NewI;
+      return Or;
     }
   }
 
