@@ -901,16 +901,16 @@ Instruction *InstCombiner::visitZExt(ZExtInst &CI) {
         (transformZExtICmp(LHS, CI, false) ||
          transformZExtICmp(RHS, CI, false))) {
       // zext (or icmp, icmp) -> or (zext icmp), (zext icmp)
-      auto *LCast = cast<ZExtInst>(
-          Builder->CreateZExt(LHS, CI.getType(), LHS->getName()));
-      auto *RCast = cast<ZExtInst>(
-          Builder->CreateZExt(RHS, CI.getType(), RHS->getName()));
+      Value *LHSVal = Builder->CreateZExt(LHS, CI.getType(), LHS->getName());
+      Value *RHSVal = Builder->CreateZExt(RHS, CI.getType(), RHS->getName());
       BinaryOperator *Or =
-          BinaryOperator::Create(Instruction::Or, LCast, RCast);
+          BinaryOperator::Create(Instruction::Or, LHSVal, RHSVal);
 
       // Perform the elimination.
-      transformZExtICmp(LHS, *LCast);
-      transformZExtICmp(RHS, *LCast);
+      if (auto *ZExt = dyn_cast<ZExtInst>(LHSVal))
+        transformZExtICmp(LHS, *Zext);
+      if (auto *ZExt = dyn_cast<ZExtInst>(RHSVal))
+        transformZExtICmp(RHS, *Zext);
 
       return Or;
     }
