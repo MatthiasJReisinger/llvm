@@ -1137,11 +1137,13 @@ static Instruction *matchDeMorgansLaws(BinaryOperator &I,
       APInt KnownZero(BitWidth, 0), KnownOne(BitWidth, 0);
       computeKnownBits(A, KnownZeroLHS, KnownOneLHS, 0, Op0);
 
-      if (KnownOne.
-      Value *ICmp = Builder->CreateICmpNE(B, CI);
-      Value *ZExt = Builder->CreateZExt(ICmp, Op0->getType());
-      Value *LogicOp = Builder->CreateAnd(A, ZExt, I.getName() + ".demorgan");
-      return BinaryOperator::CreateXor(LogicOp);
+      APInt MaybeOne(~KnownZero);
+      if (MaybeOne.ule(1)) {
+        Value *ICmp = Builder->CreateICmpNE(B, CI);
+        Value *ZExt = Builder->CreateZExt(ICmp, Op0->getType());
+        Value *LogicOp = Builder->CreateAnd(A, ZExt, I.getName() + ".demorgan");
+        return BinaryOperator::CreateXor(LogicOp);
+      }
     }
   }
 
