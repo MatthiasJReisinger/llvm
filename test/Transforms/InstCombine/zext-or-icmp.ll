@@ -11,11 +11,10 @@ define i8 @zext_or_icmp_icmp(i8 %a, i8 %b) {
   ret i8 %zext
 
 ; CHECK-LABEL: zext_or_icmp_icmp(
-; CHECK-NEXT:    %mask = and i8 %a, 1
-; CHECK-NEXT:    %toBool2 = icmp eq i8 %b, 0
-; CHECK-NEXT:    %toBool22 = zext i1 %toBool2 to i8
-; CHECK-NEXT:    %1 = xor i8 %mask, 1
-; CHECK-NEXT:    %zext = or i8 %1, %toBool22
-; CHECK-NEXT:    ret i8 %zext
+; CHECK-NEXT:   [[ICMP:%.*]] = icmp ne i8 %b, 0
+; CHECK-NEXT:   [[ZEXT:%.*]] = zext i1 [[ICMP]] to i8
+; CHECK-NEXT:   [[AND:%.*]] = and i8 [[ZEXT]], %a
+; CHECK-NEXT:   [[XOR:%.*]] = xor i8 [[AND]], 1
+; CHECK-NEXT:   ret i8 %zext
 }
 

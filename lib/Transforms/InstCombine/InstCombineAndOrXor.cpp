@@ -1123,6 +1123,28 @@ static Instruction *matchDeMorgansLaws(BinaryOperator &I,
         return BinaryOperator::CreateNot(LogicOp);
       }
 
+
+  // (A ^ 1) | zext(B == 0) -> (A & zext(B != 0)) ^ 1
+  // (A ^ 1) & zext(B == 0) -> (A | zext(B != 0)) ^ 1
+  ICmpInst::Predicate Pred;
+  Value *A = nullptr;
+  Value *B = nullptr;
+  ConstantInt *CI = nullptr;
+  if (match(Op0, m_OneUse(m_Xor(m_Value(A), m_One()))) &&
+      match(Op1, m_OneUse(m_ZExt(
+                     m_ICmp(Pred, m_Value(B), m_ConstantInt(CI)))))) {
+    if (Pred == ICmpInst::ICMP_EQ && CI->isZero()) {
+      APInt KnownZero(BitWidth, 0), KnownOne(BitWidth, 0);
+      computeKnownBits(A, KnownZeroLHS, KnownOneLHS, 0, Op0);
+
+      if (KnownOne.
+      Value *ICmp = Builder->CreateICmpNE(B, CI);
+      Value *ZExt = Builder->CreateZExt(ICmp, Op0->getType());
+      Value *LogicOp = Builder->CreateAnd(A, ZExt, I.getName() + ".demorgan");
+      return BinaryOperator::CreateXor(LogicOp);
+    }
+  }
+
   return nullptr;
 }
 
