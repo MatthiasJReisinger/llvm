@@ -62,6 +62,19 @@ public:
   bool isPostDominator() const { return IsPostDominators; }
 };
 
+/// Is a node the exit node of a graph as needed for dominator tree calculation.
+///
+/// By default we just assume that each node that does not have a successor
+/// is an exit node of the graph. However, specializations of the dominator
+/// tree for specific graph types can overwrite this function in case more
+/// detailed information is available. E.g. one may ignore unreachable
+/// instructions, which have no successors but also do not return from the
+/// function.
+template<class GraphTy>
+bool isDomTreeExit(typename GraphTy::NodeType *N) {
+  return GraphTy::child_begin(N) == GraphTy::child_end(N);
+}
+
 template <class NodeT> class DominatorTreeBase;
 struct PostDominatorTree;
 
@@ -732,7 +745,7 @@ public:
       for (typename TraitsTy::nodes_iterator I = TraitsTy::nodes_begin(&F),
                                              E = TraitsTy::nodes_end(&F);
            I != E; ++I) {
-        if (TraitsTy::child_begin(I) == TraitsTy::child_end(I))
+        if (isDomTreeExit<TraitsTy>(I))
           addRoot(I);
 
         // Prepopulate maps so that we don't get iterator invalidation issues

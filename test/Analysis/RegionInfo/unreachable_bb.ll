@@ -1,29 +1,26 @@
 ; RUN: opt -regions -analyze < %s | FileCheck %s
 
-; We should not crash if there are some bbs that are not reachable.
-define void @f() {
+; CHECK: Region tree:
+; CHECK: [0] entry => <Function Return>
+; CHECK:   [1] loop => exit
+; CHECK:       [2] loop.next => loop.backedge
+
+define void @foo.bar() {
 entry:
-  br label %for.pre
+  br label %loop
 
-notintree:                                        ; No predecessors!
-  br label %ret
+loop:
+  br label %loop.next
 
-for.pre:                                          ; preds = %entry
-  br label %for
+loop.next:
+  br i1 false, label %loop.backedge, label %loop.unreachable
 
-for:                                              ; preds = %for.inc, %for.pre
-  %indvar = phi i64 [ 0, %for.pre ], [ %indvar.next, %for.inc ]
-  %exitcond = icmp ne i64 %indvar, 200
-  br i1 %exitcond, label %for.inc, label %ret
+loop.unreachable:
+  unreachable
 
-for.inc:                                          ; preds = %for
-  %indvar.next = add i64 %indvar, 1
-  br label %for
+loop.backedge:
+  br i1 false, label %loop, label %exit
 
-ret:                                              ; preds = %for, %notintree
+exit:
   ret void
 }
-
-; CHECK: [0] entry => <Function Return>
-; CHECK:   [1] for => ret
-

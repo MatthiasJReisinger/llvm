@@ -23,12 +23,10 @@ end124:
 end172:
   br label %exit
 
-
 exit:
-  unreachable
-
-
+  ret void
 }
+
 ; CHECK-NOT: =>
 ; CHECK: [0] end33 => <Function Return>
 ; CHECK-NEXT:      [1] end33 => exit
