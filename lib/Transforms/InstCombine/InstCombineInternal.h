@@ -405,6 +405,9 @@ private:
   Instruction::CastOps isEliminableCastPair(const CastInst *CI1,
                                             const CastInst *CI2);
 
+  Instruction *matchDeMorgansLaws(BinaryOperator &I,
+                                  InstCombiner::BuilderTy *Builder);
+
 public:
   /// \brief Inserts an instruction \p New before instruction \p Old
   ///

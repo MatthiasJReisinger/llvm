@@ -1101,8 +1101,9 @@ Value *InstCombiner::FoldAndOfFCmps(FCmpInst *LHS, FCmpInst *RHS) {
 /// Match De Morgan's Laws:
 /// (~A & ~B) == (~(A | B))
 /// (~A | ~B) == (~(A & B))
-static Instruction *matchDeMorgansLaws(BinaryOperator &I,
-                                       InstCombiner::BuilderTy *Builder) {
+Instruction *
+InstCombiner::matchDeMorgansLaws(BinaryOperator &I,
+                                 InstCombiner::BuilderTy *Builder) {
   auto Opcode = I.getOpcode();
   assert((Opcode == Instruction::And || Opcode == Instruction::Or) &&
          "Trying to match De Morgan's Laws with something other than and/or");
@@ -1123,26 +1124,29 @@ static Instruction *matchDeMorgansLaws(BinaryOperator &I,
         return BinaryOperator::CreateNot(LogicOp);
       }
 
-
   // (A ^ 1) | zext(B == 0) -> (A & zext(B != 0)) ^ 1
   // (A ^ 1) & zext(B == 0) -> (A | zext(B != 0)) ^ 1
   ICmpInst::Predicate Pred;
   Value *A = nullptr;
   Value *B = nullptr;
-  ConstantInt *CI = nullptr;
   if (match(Op0, m_OneUse(m_Xor(m_Value(A), m_One()))) &&
-      match(Op1, m_OneUse(m_ZExt(
-                     m_ICmp(Pred, m_Value(B), m_ConstantInt(CI)))))) {
-    if (Pred == ICmpInst::ICMP_EQ && CI->isZero()) {
+      match(Op1, m_OneUse(m_ZExt(m_ICmp(Pred, m_Value(B), m_Zero()))))) {
+    if (Pred == ICmpInst::ICMP_EQ) {
+      uint32_t BitWidth = A->getType()->getIntegerBitWidth();
       APInt KnownZero(BitWidth, 0), KnownOne(BitWidth, 0);
-      computeKnownBits(A, KnownZeroLHS, KnownOneLHS, 0, Op0);
+      Instruction *Op0I = cast<Instruction>(Op0);
+      computeKnownBits(A, KnownZero, KnownOne, 0, Op0I);
 
+      // Only A's lowest bit is allowed to be set.
       APInt MaybeOne(~KnownZero);
-      if (MaybeOne.ule(1)) {
-        Value *ICmp = Builder->CreateICmpNE(B, CI);
+      if (MaybeOne == 1) {
+        Value *Zero = ConstantInt::get(B->getType(), 0);
+        Value *ICmp = Builder->CreateICmpNE(B, Zero);
         Value *ZExt = Builder->CreateZExt(ICmp, Op0->getType());
-        Value *LogicOp = Builder->CreateAnd(A, ZExt, I.getName() + ".demorgan");
-        return BinaryOperator::CreateXor(LogicOp);
+        Value *LogicOp = Builder->CreateBinOp(Opcode, A, ZExt,
+                                              I.getName() + ".demorgan");
+        Value *One = ConstantInt::get(LogicOp->getType(), 1);
+        return BinaryOperator::CreateXor(LogicOp, One);
       }
     }
   }
