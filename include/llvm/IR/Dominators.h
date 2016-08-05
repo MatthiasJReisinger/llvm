@@ -24,6 +24,7 @@
 #include "llvm/IR/CFG.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/PassManager.h"
+#include "llvm/IR/Instructions.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/GenericDomTree.h"
@@ -57,6 +58,64 @@ public:
   }
   bool isSingleEdge() const;
 };
+
+/// Is a node the exit node of a graph as needed for dominator tree calculation.
+///
+/// All basic blocks that have no successors are exit nodes of the graph, except
+/// the ones that terminate with an UnreachableInst. Not including unreachable
+/// instructions allows us to treat unreachable basic blocks like infinite
+/// loops. This means unreachable parts of the CFG will not be visible in the
+/// post-dominator tree and - more importantly - will not affect the other parts
+/// of the post-dominator tree. If we would model unreachable basic blocks as
+/// exit blocks of the CFG the post-dominator tree would be flattened out and
+/// we would miss important post-dominance relations.
+///
+///
+/// CFG
+/// ===
+///                  |
+///                 bb1
+///                /   \
+///              bb2   ^
+///             /  \   /
+///  unreachable    bb3
+///                  |
+///               exit
+///
+///
+/// Post dominator tree with unreachable nodes as exit node
+/// =======================================================
+///
+///            virtual root
+///            /      |   \
+///     unreachable exit  bb2
+///                   |    |
+///                  bb3  bb1
+///
+/// Post dominator tree without unreachable nodes as exit node
+/// ==========================================================
+///
+///            virtual root
+///                  |
+///                 exit
+///                  |
+///                 bb3
+///                  |
+///                 bb2
+///                  |
+///                 bb1
+///
+/// When ignoring unreachables we can now correctly determine that bb2 is
+/// post-dominated by bb3.
+template <>
+inline bool isDomTreeExit<GraphTraits<Function*>>(
+    typename GraphTraits<Function*>::NodeType *N) {
+  if (GraphTraits<Function *>::child_begin(N) !=
+      GraphTraits<Function *>::child_end(N))
+    return false;
+
+  return !isa<UnreachableInst>(N->getTerminator());
+}
 
 /// \brief Concrete subclass of DominatorTreeBase that is used to compute a
 /// normal dominator tree.
